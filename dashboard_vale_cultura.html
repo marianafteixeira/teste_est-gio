@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Executivo - Vale Cultura Analytics</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            },
+            accent: {
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    /* Accessibility focus indicators */
+    *:focus-visible {
+      outline: 3px solid #2563eb !important;
+      outline-offset: 2px;
+    }
+
+    /* High-contrast mode styles */
+    .high-contrast {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+    }
+    .high-contrast .bg-white,
+    .high-contrast .bg-slate-50,
+    .high-contrast .bg-slate-100 {
+      background-color: #121212 !important;
+      color: #ffffff !important;
+      border-color: #ffffff !important;
+    }
+    .high-contrast .text-slate-900,
+    .high-contrast .text-slate-800,
+    .high-contrast .text-slate-700,
+    .high-contrast .text-slate-600,
+    .high-contrast .text-slate-500 {
+      color: #ffffff !important;
+    }
+    .high-contrast select, 
+    .high-contrast button {
+      border: 2px solid #ffffff !important;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- Accessible Skip Link -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-blue-700 focus:text-white focus:font-bold">
+    Pular para o conteúdo principal
+  </a>
+
+  <!-- Header Navigation -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-accent-600 flex items-center justify-center shadow-md">
+          <i class="fas fa-masks-theater text-white text-lg" aria-hidden="true"></i>
+        </div>
+        <div>
+          <h1 class="font-black text-lg sm:text-xl leading-tight tracking-tight text-white">Vale Cultura Analytics</h1>
+          <p class="text-xs text-slate-300 font-medium hidden sm:block">Painel Executivo de Gestão & Impacto Cultural</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- High Contrast Accessibility Toggle -->
+        <button onclick="toggleHighContrast()" id="contrastBtn" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl border border-slate-700 transition flex items-center gap-2" aria-label="Alternar modo de alto contraste">
+          <i class="fas fa-circle-half-stroke text-amber-400" aria-hidden="true"></i>
+          <span class="hidden md:inline">Alto Contraste</span>
+        </button>
+
+        <!-- JSON Upload Button -->
+        <label for="jsonFileInput" class="cursor-pointer px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl border border-slate-700 transition flex items-center gap-2">
+          <i class="fas fa-file-arrow-up text-brand-500" aria-hidden="true"></i>
+          <span>Carregar JSON</span>
+          <input type="file" id="jsonFileInput" accept=".json" class="hidden" aria-label="Fazer upload de arquivo JSON de dados">
+        </label>
+
+        <!-- Export / Print -->
+        <button onclick="window.print()" class="px-3 py-1.5 text-xs font-bold bg-accent-600 hover:bg-accent-700 text-white rounded-xl shadow transition flex items-center gap-1.5" aria-label="Imprimir ou exportar relatório">
+          <i class="fas fa-print" aria-hidden="true"></i>
+          <span class="hidden md:inline">Exportar</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main id="main-content" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- FILTERS BAR -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5" aria-label="Filtros interativos do painel">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2 text-slate-900 font-bold">
+          <i class="fas fa-sliders text-accent-600" aria-hidden="true"></i>
+          <h2 class="text-sm font-extrabold uppercase tracking-wider">Filtros Dinâmicos</h2>
+        </div>
+        <span class="text-xs text-slate-600 font-semibold" id="filterStatus">Exibindo dados nacionais agregados</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <!-- Filter Year -->
+        <div>
+          <label for="filterYear" class="block text-xs font-bold text-slate-800 mb-1">Ano de Exercício</label>
+          <select id="filterYear" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm font-semibold rounded-xl p-2.5 focus:ring-2 focus:ring-accent-600 focus:border-accent-600 transition">
+            <option value="ALL">Todos os Anos</option>
+          </select>
+        </div>
+
+        <!-- Filter Region -->
+        <div>
+          <label for="filterRegion" class="block text-xs font-bold text-slate-800 mb-1">Região Geográfica</label>
+          <select id="filterRegion" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm font-semibold rounded-xl p-2.5 focus:ring-2 focus:ring-accent-600 focus:border-accent-600 transition">
+            <option value="ALL">Brasil (Todas as Regiões)</option>
+            <option value="Norte">Norte</option>
+            <option value="Nordeste">Nordeste</option>
+            <option value="Centro-Oeste">Centro-Oeste</option>
+            <option value="Sudeste">Sudeste</option>
+            <option value="Sul">Sul</option>
+          </select>
+        </div>
+
+        <!-- Reset Button -->
+        <div class="flex items-end">
+          <button onclick="resetFilters()" class="w-full py-2.5 px-4 text-xs font-bold bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl transition flex items-center justify-center gap-2">
+            <i class="fas fa-rotate-right" aria-hidden="true"></i>
+            <span>Redefinir Filtros</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STORY STEP 1: MACRO KPIS -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Indicadores Macro de Desempenho">
+      <!-- KPI 1 -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Total Utilizado</span>
+          <div class="w-10 h-10 rounded-xl bg-teal-100 text-brand-700 flex items-center justify-center">
+            <i class="fas fa-wallet text-lg" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-black text-slate-900" id="kpiTotalAmount">R$ 0,00</div>
+        <p class="text-xs text-slate-600 font-medium mt-2" id="kpiTotalLabel">Volume total consumido</p>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Média Mensal / Ano</span>
+          <div class="w-10 h-10 rounded-xl bg-blue-100 text-accent-700 flex items-center justify-center">
+            <i class="fas fa-chart-line text-lg" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-black text-slate-900" id="kpiAverageAmount">R$ 0,00</div>
+        <p class="text-xs text-slate-600 font-medium mt-2">Média mensal de utilização</p>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Grupo Mais Utilizado</span>
+          <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center">
+            <i class="fas fa-icons text-lg" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="text-xl font-black text-slate-900 truncate" id="kpiTopCategory">-</div>
+        <p class="text-xs text-purple-800 font-extrabold mt-2 truncate" id="kpiTopCategoryShare">0% do valor total</p>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Total Acumulado Top 3 Meses</span>
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+            <i class="fas fa-calendar-stars text-lg" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-black text-slate-900" id="kpiTop3Total">R$ 0,00</div>
+        <p class="text-xs text-amber-800 font-extrabold mt-2 truncate" id="kpiTop3Share">0% do total global</p>
+      </div>
+    </section>
+
+    <!-- STORY STEP 2: TEMPORAL EVOLUTION & CATEGORY DISTRIBUTION -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Evolution Line Chart -->
+      <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Evolução Mensal do Uso do Vale Cultura</h3>
+              <p class="text-xs text-slate-600 font-medium">Comportamento de consumo ao longo dos meses no ano/região</p>
+            </div>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700">Mensal</span>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="evolutionChart" aria-label="Gráfico de linha da evolução mensal do uso do vale cultura"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown Chart -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Uso por Categoria</h3>
+              <p class="text-xs text-slate-600 font-medium">Distribuição por grupo de descrição cultural</p>
+            </div>
+            <i class="fas fa-chart-pie text-slate-400" aria-hidden="true"></i>
+          </div>
+          <div class="relative h-56 w-full flex items-center justify-center">
+            <canvas id="categoryChart" aria-label="Gráfico de rosca da distribuição por categoria de cultura"></canvas>
+          </div>
+        </div>
+        <div id="categoryLegend" class="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- STORY STEP 3: TOP 5 ESTADOS & TOP 5 MESES -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Top 5 States -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900">5 Estados com Maior Utilização</h3>
+            <p class="text-xs text-slate-600 font-medium">Unidades federativas líderes em gastos com vale cultura</p>
+          </div>
+          <i class="fas fa-map-location-dot text-brand-700 text-lg" aria-hidden="true"></i>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="topStatesChart" aria-label="Gráfico dos 5 estados com mais utilização"></canvas>
+        </div>
+      </div>
+
+      <!-- Top 5 Months -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900">5 Meses Mais Utilizados no Ano</h3>
+            <p class="text-xs text-slate-600 font-medium">Períodos de maior concentração de utilização cultural</p>
+          </div>
+          <i class="fas fa-calendar-check text-accent-600 text-lg" aria-hidden="true"></i>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="topMonthsChart" aria-label="Gráfico dos 5 meses mais utilizados"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- STORY STEP 4: DETALHAMENTO DOS 3 MESES MAIS UTILIZADOS -->
+    <section class="bg-slate-900 text-white rounded-2xl p-6 shadow-xl space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 font-bold text-xs border border-teal-500/30">DESTAQUE EXECUTIVO</span>
+            <h2 class="text-xl font-black tracking-tight text-white">Detalhamento dos 3 Meses Mais Utilizados</h2>
+          </div>
+          <p class="text-xs text-slate-300">Análise específica dos 3 meses de maior uso e com o que foram utilizados em cada período</p>
+        </div>
+        
+        <!-- Total Top 3 Badge -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 px-5 text-right flex flex-col justify-center">
+          <span class="text-[10px] uppercase tracking-wider text-slate-300 font-bold">Acumulado Top 3 Meses</span>
+          <span class="text-xl font-black text-teal-400" id="top3SectionTotal">R$ 0,00</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Cards Container for Top 3 -->
+      <div id="top3CardsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Injected via JavaScript -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-6 mt-10 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+      <p class="font-bold text-slate-200">Painel de Gestão do Vale Cultura — Relatório Analítico Executivo &copy; 2026</p>
+      <p class="text-slate-400">Totalmente acessível, interativo e adaptável a dados via upload JSON.</p>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Global Dataset Repository
+    let dataset = [];
+
+    // Brazilian State-to-Region mapping
+    const stateRegionMap = {
+      'AC': 'Norte', 'AL': 'Nordeste', 'AP': 'Norte', 'AM': 'Norte', 'BA': 'Nordeste',
+      'CE': 'Nordeste', 'DF': 'Centro-Oeste', 'ES': 'Sudeste', 'GO': 'Centro-Oeste',
+      'MA': 'Nordeste', 'MT': 'Centro-Oeste', 'MS': 'Centro-Oeste', 'MG': 'Sudeste',
+      'PA': 'Norte', 'PB': 'Nordeste', 'PR': 'Sul', 'PE': 'Nordeste', 'PI': 'Nordeste',
+      'RJ': 'Sudeste', 'RN': 'Nordeste', 'RS': 'Sul', 'RO': 'Norte', 'RR': 'Norte',
+      'SC': 'Sul', 'SP': 'Sudeste', 'SE': 'Nordeste', 'TO': 'Norte'
+    };
+
+    // Chart Instances
+    let charts = {
+      evolution: null,
+      category: null,
+      states: null,
+      months: null
+    };
+
+    // Format BRL Currency
+    const formatBRL = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+
+    // High Contrast Toggle Logic
+    function toggleHighContrast() {
+      document.body.classList.toggle('high-contrast');
+    }
+
+    // Generate Mock Data (Cleaned & Structured)
+    function generateMockData() {
+      const categories = [
+        'Livraria & Literatura', 
+        'Cinema & Audiovisual', 
+        'Teatro & Espetáculos', 
+        'Shows & Concertos', 
+        'Museus & Exposições', 
+        'Instrumentos & Música'
+      ];
+      const ufs = ['SP', 'RJ', 'MG', 'RS', 'PR', 'BA', 'PE', 'CE', 'DF', 'AM', 'SC', 'GO'];
+      const months = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      const years = [2023, 2024, 2025];
+
+      let data = [];
+      let id = 1;
+
+      years.forEach(yr => {
+        months.forEach((m, mIdx) => {
+          // Seasonal weighting (Jul, Nov, Dec are naturally higher)
+          let monthMultiplier = (m === 'Dezembro' || m === 'Julho' || m === 'Novembro') ? 2.1 : 1.0;
+          
+          ufs.forEach(uf => {
+            let count = Math.floor(Math.random() * 3) + 1;
+            for (let c = 0; c < count; c++) {
+              let cat = categories[Math.floor(Math.random() * categories.length)];
+              let baseVal = 50 + Math.random() * 300;
+              let amount = parseFloat((baseVal * monthMultiplier * (uf === 'SP' || uf === 'RJ' ? 1.7 : 1.0)).toFixed(2));
+              
+              data.push({
+                id: id++,
+                date: `${yr}-${String(mIdx + 1).padStart(2, '0')}-15`,
+                year: yr,
+                month: m,
+                monthNum: mIdx + 1,
+                state: uf,
+                region: stateRegionMap[uf] || 'Sudeste',
+                category: cat,
+                amount: amount
+              });
+            }
+          });
+        });
+      });
+
+      return cleanData(data);
+    }
+
+    // Clean & Sanitize Input Data
+    function cleanData(data) {
+      if (!Array.isArray(data)) return [];
+
+      return data.filter(item => {
+        return item &&
+               typeof item.amount === 'number' && !isNaN(item.amount) && item.amount > 0 &&
+               item.year && item.month && item.state;
+      }).map(item => {
+        item.region = item.region || stateRegionMap[item.state] || 'Outros';
+        item.category = item.category ? String(item.category).trim() : 'Outros';
+        return item;
+      });
+    }
+
+    // Populate Filter Select Options
+    function populateFilterOptions() {
+      const yearSelect = document.getElementById('filterYear');
+      const years = [...new Set(dataset.map(i => i.year))].sort((a,b) => b - a);
+
+      yearSelect.innerHTML = '<option value="ALL">Todos os Anos</option>';
+      years.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = `Ano ${y}`;
+        yearSelect.appendChild(opt);
+      });
+    }
+
+    // Get Filtered Subset
+    function getFilteredData() {
+      const selectedYear = document.getElementById('filterYear').value;
+      const selectedRegion = document.getElementById('filterRegion').value;
+
+      return dataset.filter(item => {
+        const matchYear = (selectedYear === 'ALL' || String(item.year) === String(selectedYear));
+        const matchRegion = (selectedRegion === 'ALL' || item.region === selectedRegion);
+        return matchYear && matchRegion;
+      });
+    }
+
+    // Main Dashboard Render
+    function renderDashboard() {
+      const filtered = getFilteredData();
+      
+      updateFilterLabel(filtered);
+      renderKPIs(filtered);
+      renderEvolutionChart(filtered);
+      renderCategoryChart(filtered);
+      renderTopStatesChart(filtered);
+      renderTopMonthsChart(filtered);
+      renderTop3FeaturedSection(filtered);
+    }
+
+    // Update Filter Description Label
+    function updateFilterLabel(filtered) {
+      const yr = document.getElementById('filterYear').value;
+      const reg = document.getElementById('filterRegion').value;
+      const yrText = yr === 'ALL' ? 'Todos os Anos' : `Ano ${yr}`;
+      const regText = reg === 'ALL' ? 'Brasil (Todas as Regiões)' : `Região ${reg}`;
+      
+      document.getElementById('filterStatus').innerText = `${regText} | ${yrText}`;
+      document.getElementById('kpiTotalLabel').innerText = `Volume total em ${regText}`;
+    }
+
+    // Render Macro KPIs
+    function renderKPIs(data) {
+      const total = data.reduce((sum, item) => sum + item.amount, 0);
+
+      // Monthly Average
+      const uniqueMonths = new Set(data.map(i => `${i.year}-${i.month}`)).size || 1;
+      const monthlyAvg = total / uniqueMonths;
+
+      // Top Category
+      const catTotals = {};
+      data.forEach(i => catTotals[i.category] = (catTotals[i.category] || 0) + i.amount);
+      let topCat = '-';
+      let topCatVal = 0;
+      Object.entries(catTotals).forEach(([cat, val]) => {
+        if (val > topCatVal) { topCatVal = val; topCat = cat; }
+      });
+      const topCatShare = total > 0 ? ((topCatVal / total) * 100).toFixed(1) : 0;
+
+      // Top 3 Months Total
+      const monthTotals = {};
+      data.forEach(i => monthTotals[i.month] = (monthTotals[i.month] || 0) + i.amount);
+      const top3ValSum = Object.values(monthTotals)
+        .sort((a,b) => b - a)
+        .slice(0, 3)
+        .reduce((a,b) => a + b, 0);
+      const top3Share = total > 0 ? ((top3ValSum / total) * 100).toFixed(1) : 0;
+
+      document.getElementById('kpiTotalAmount').innerText = formatBRL(total);
+      document.getElementById('kpiAverageAmount').innerText = formatBRL(monthlyAvg);
+      document.getElementById('kpiTopCategory').innerText = topCat;
+      document.getElementById('kpiTopCategoryShare').innerText = `${topCatShare}% do valor total`;
+      document.getElementById('kpiTop3Total').innerText = formatBRL(top3ValSum);
+      document.getElementById('kpiTop3Share').innerText = `${top3Share}% do total consumido`;
+    }
+
+    // Evolution Line Chart
+    function renderEvolutionChart(data) {
+      const monthNames = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      
+      const monthlyMap = {};
+      monthNames.forEach(m => monthlyMap[m] = 0);
+      data.forEach(i => {
+        if (monthlyMap[i.month] !== undefined) {
+          monthlyMap[i.month] += i.amount;
+        }
+      });
+
+      const ctx = document.getElementById('evolutionChart').getContext('2d');
+      if (charts.evolution) charts.evolution.destroy();
+
+      charts.evolution = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: monthNames,
+          datasets: [{
+            label: 'Total Gasto (R$)',
+            data: Object.values(monthlyMap),
+            borderColor: '#0d9488',
+            backgroundColor: 'rgba(13, 148, 136, 0.12)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 3,
+            pointBackgroundColor: '#0f766e',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: { label: ctx => ` Investido: ${formatBRL(ctx.parsed.y)}` }
+            }
+          },
+          scales: {
+            y: {
+              ticks: { callback: v => 'R$ ' + (v / 1000).toFixed(0) + 'k' },
+              grid: { color: '#f1f5f9' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // Category Doughnut Chart
+    function renderCategoryChart(data) {
+      const catTotals = {};
+      data.forEach(i => catTotals[i.category] = (catTotals[i.category] || 0) + i.amount);
+
+      const labels = Object.keys(catTotals);
+      const values = Object.values(catTotals);
+      const totalSum = values.reduce((a, b) => a + b, 0);
+
+      const colors = ['#0d9488', '#2563eb', '#9333ea', '#d97706', '#dc2626', '#0284c7'];
+
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      if (charts.category) charts.category.destroy();
+
+      charts.category = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const pct = totalSum > 0 ? ((ctx.parsed / totalSum) * 100).toFixed(1) : 0;
+                  return ` ${ctx.label}: ${formatBRL(ctx.parsed)} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Custom Legend Render
+      const legendBox = document.getElementById('categoryLegend');
+      legendBox.innerHTML = '';
+      labels.forEach((cat, idx) => {
+        const val = catTotals[cat];
+        const pct = totalSum > 0 ? ((val / totalSum) * 100).toFixed(1) : 0;
+        const color = colors[idx % colors.length];
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between';
+        row.innerHTML = `
+          <div class="flex items-center space-x-2 truncate">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${color}"></span>
+            <span class="text-slate-700 font-medium truncate">${cat}</span>
+          </div>
+          <span class="font-extrabold text-slate-900 ml-2">${pct}%</span>
+        `;
+        legendBox.appendChild(row);
+      });
+    }
+
+    // Top 5 States Horizontal Bar
+    function renderTopStatesChart(data) {
+      const stateTotals = {};
+      data.forEach(i => stateTotals[i.state] = (stateTotals[i.state] || 0) + i.amount);
+
+      const sorted = Object.entries(stateTotals)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 5);
+
+      const labels = sorted.map(i => i[0]);
+      const values = sorted.map(i => i[1]);
+
+      const ctx = document.getElementById('topStatesChart').getContext('2d');
+      if (charts.states) charts.states.destroy();
+
+      charts.states = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total (R$)',
+            data: values,
+            backgroundColor: '#0d9488',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ` ${formatBRL(ctx.parsed.x)}` } }
+          },
+          scales: {
+            x: { ticks: { callback: v => 'R$ ' + (v / 1000).toFixed(0) + 'k' }, grid: { color: '#f1f5f9' } },
+            y: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // Top 5 Months Bar Chart
+    function renderTopMonthsChart(data) {
+      const monthTotals = {};
+      data.forEach(i => monthTotals[i.month] = (monthTotals[i.month] || 0) + i.amount);
+
+      const sorted = Object.entries(monthTotals)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 5);
+
+      const labels = sorted.map(i => i[0]);
+      const values = sorted.map(i => i[1]);
+
+      const ctx = document.getElementById('topMonthsChart').getContext('2d');
+      if (charts.months) charts.months.destroy();
+
+      charts.months = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total (R$)',
+            data: values,
+            backgroundColor: '#2563eb',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ` ${formatBRL(ctx.parsed.y)}` } }
+          },
+          scales: {
+            y: { ticks: { callback: v => 'R$ ' + (v / 1000).toFixed(0) + 'k' }, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // Detalhamento dos 3 Meses Mais Utilizados e com o que foram utilizados
+    function renderTop3FeaturedSection(data) {
+      const monthMap = {};
+      data.forEach(item => {
+        if (!monthMap[item.month]) {
+          monthMap[item.month] = {
+            month: item.month,
+            total: 0,
+            categories: {}
+          };
+        }
+        monthMap[item.month].total += item.amount;
+        monthMap[item.month].categories[item.category] = (monthMap[item.month].categories[item.category] || 0) + item.amount;
+      });
+
+      const top3 = Object.values(monthMap)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 3);
+
+      const container = document.getElementById('top3CardsGrid');
+      const totalSumElem = document.getElementById('top3SectionTotal');
+      container.innerHTML = '';
+
+      if (top3.length === 0) {
+        container.innerHTML = `<div class="col-span-3 text-center text-slate-400 py-6">Sem dados para exibição nos filtros atuais.</div>`;
+        totalSumElem.innerText = formatBRL(0);
+        return;
+      }
+
+      const top3Accumulated = top3.reduce((sum, m) => sum + m.total, 0);
+      totalSumElem.innerText = formatBRL(top3Accumulated);
+
+      const rankBadges = [
+        { title: '1º Mês Pico', bg: 'bg-teal-500/20 text-teal-300 border-teal-500/30' },
+        { title: '2º Mês Pico', bg: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+        { title: '3º Mês Pico', bg: 'bg-purple-500/20 text-purple-300 border-purple-500/30' }
+      ];
+
+      top3.forEach((mObj, idx) => {
+        const badge = rankBadges[idx] || rankBadges[2];
+        const sortedCats = Object.entries(mObj.categories).sort((a,b) => b[1] - a[1]);
+
+        let catListHtml = sortedCats.map(([catName, catVal]) => {
+          const catPct = mObj.total > 0 ? ((catVal / mObj.total) * 100).toFixed(1) : 0;
+          return `
+            <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-800/80 last:border-0">
+              <span class="text-slate-200 font-medium truncate">${catName}</span>
+              <div class="text-right ml-2 flex-shrink-0">
+                <span class="font-bold text-white block">${formatBRL(catVal)}</span>
+                <span class="text-[10px] text-slate-400 font-semibold">${catPct}%</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-800/90 rounded-xl border border-slate-700 p-5 flex flex-col justify-between space-y-4';
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded border ${badge.bg}">
+                ${badge.title}
+              </span>
+              <span class="text-xs text-slate-300 font-medium">Top Consumo</span>
+            </div>
+            <h3 class="text-lg font-black text-white">${mObj.month}</h3>
+            <p class="text-2xl font-black text-teal-400 mt-1">${formatBRL(mObj.total)}</p>
+          </div>
+
+          <div class="bg-slate-900/80 rounded-lg p-3.5 border border-slate-800 space-y-1">
+            <span class="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block mb-2">
+              Com o que foi utilizado:
+            </span>
+            ${catListHtml}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Reset Filters
+    function resetFilters() {
+      document.getElementById('filterYear').value = 'ALL';
+      document.getElementById('filterRegion').value = 'ALL';
+      renderDashboard();
+    }
+
+    // JSON File Import Handler
+    document.getElementById('jsonFileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const json = JSON.parse(evt.target.result);
+          if (Array.isArray(json)) {
+            dataset = cleanData(json);
+            populateFilterOptions();
+            renderDashboard();
+            alert('Dados JSON importados e sanitizados com sucesso!');
+          } else {
+            alert('Formato inválido. O arquivo JSON deve ser um array de objetos.');
+          }
+        } catch (err) {
+          alert('Erro ao carregar o arquivo JSON. Certifique-se de que é um JSON válido.');
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Initialize Page
+    window.onload = function() {
+      dataset = generateMockData();
+      populateFilterOptions();
+
+      document.getElementById('filterYear').addEventListener('change', renderDashboard);
+      document.getElementById('filterRegion').addEventListener('change', renderDashboard);
+
+      renderDashboard();
+    };
+  </script>
+</body>
+</html>
